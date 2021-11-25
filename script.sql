@@ -53,7 +53,6 @@ create table Desfechos(
 	constraint pk_desfechos primary key (id_paciente, id_atendimento)
 );
 
-
 SET datestyle = 'ISO,DMY';
 -- Preenchendo tabelas com valores dos csvs
 copy Pacientes from '/HSL_Junho2021/HSL_Pacientes_4.csv' delimiter '|' csv header;
