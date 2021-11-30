@@ -119,7 +119,7 @@ select avg(n_exames) as media_exames_M from (
 
 -- Query para mulheres
 select avg(n_exames) as media_exames_F from (
-	select count(e.id_exame) as n_exames, e.id_paciente from exames e
+    select count(e.id_exame) as n_exames, e.id_paciente from exames e
 	join pacientes p on p.id_paciente = e.id_paciente
 	where p.ic_sexo = 'F'
 	group by e.id_paciente
@@ -129,7 +129,8 @@ select avg(n_exames) as media_exames_F from (
 select count(id_exame) as qnt_exames_covid from exames e where de_analito = 'Coronavírus (2019-nCoV)';
 
 -- Conta quantos exames de covid possuem resultado positivo
-select count(id_exame) as qnt_exames_covid_positivo from exames e where de_analito = 'Coronavírus (2019-nCoV)' and de_resultado like 'DETECTADO%';
+select count(id_exame) as qnt_exames_covid_positivo from exames e
+where de_analito = 'Coronavírus (2019-nCoV)' and de_resultado like 'DETECTADO%';
 
 -- Questão estranha, perguntar pro prof
 select p.aa_nascimento, count(e.de_resultado) from exames e
@@ -143,6 +144,53 @@ select mode() within group (order by de_desfecho) from desfechos;
 
 select d.de_desfecho, d.id_paciente from desfechos d where lower(d.de_desfecho) <> 'alta administrativa'
 
-select mode() within group (order by de_desfecho) from desfechos d
+-- TODO Ultimo topico
+select p.ic_sexo, mode() within group (order by de_desfecho) from desfechos d
 join pacientes p on d.id_paciente = p.id_paciente
-where d.id_paciente = 'DDE9B798AE77982101C3291C2DE47074';
+
+
+------------------- EXERCÍCIO 03 -------------------
+-- Calcular numero de mortes de pessoas que tiveram resultado positivo em Covid-19
+-- e também numero de mortes agrupados por decada de nascimento dos pacientes.
+select count(*) as n_mortes from (
+    select id_paciente as id_pacientes_positivos from exames e
+    where de_analito = 'Coronavírus (2019-nCoV)' and de_resultado like 'DETECTADO%'   
+) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
+where d.dt_desfecho like 'DDMMAA'
+
+select floor(p.aa_nascimento/10)*10 as decada_de_nascimento, count(p.id_paciente) as n_mortes
+from (
+    select id_paciente as id_pacientes_positivos from exames e
+    where de_analito = 'Coronavírus (2019-nCoV)' and de_resultado like 'DETECTADO%'   
+) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
+join pacientes p on p.id_paciente = id_pacientes_positivos 
+where d.dt_desfecho like 'DDMMAA'
+group by decada_de_nascimento order by decada_de_nascimento asc;
+
+
+------------------- EXERCÍCIO 04 -------------------
+-- 4.A - Select para buscar mais novos e mais velhos de cada cidade usando apenas group by
+select p.cd_municipio, p.id_paciente, date_part('year', now()) - p.aa_nascimento as idade from (
+    select cd_municipio as min_max_mun, max(aa_nascimento) as ano_max, min(aa_nascimento) as ano_min
+    from pacientes
+    group by cd_municipio
+) as min_max_anos, pacientes p where (p.aa_nascimento = ano_max or p.aa_nascimento = ano_min) and p.cd_municipio = min_max_mun
+order by cd_municipio, idade asc
+
+-- 4.B - Select para buscar mais novos e mais velhos de cada cidade usando with
+with min_max_anos as (
+    select cd_municipio as min_max_mun, max(aa_nascimento) as ano_max, min(aa_nascimento) as ano_min
+    from pacientes
+    group by cd_municipio   
+) 
+select p.cd_municipio, p.id_paciente, date_part('year', now()) - p.aa_nascimento as idade from min_max_anos, pacientes p
+where (p.aa_nascimento = ano_max or p.aa_nascimento = ano_min) and p.cd_municipio = min_max_mun
+order by cd_municipio, idade asc
+
+-- 4.C - Select para buscar mais novos e mais velhos de cada cidade usando window function
+
+select cd_municipio, id_paciente, aa_nascimento,
+    min(aa_nascimento) over(partition by cd_municipio) ano_min,
+    max(aa_nascimento) over(partition by cd_municipio) ano_max
+from pacientes p 
+order by cd_municipio, aa_nascimento
