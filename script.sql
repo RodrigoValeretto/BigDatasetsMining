@@ -69,7 +69,7 @@ update pacientes set aa_nascimento = '1930' where aa_nascimento = 'AAAA';
 update pacientes set aa_nascimento = null where aa_nascimento = 'YYYY';
 alter table pacientes alter column aa_nascimento type integer using aa_nascimento::integer;
 
-create extension unaccent;
+create extension if not exists unaccent;
 update exames set de_analito = lower(unaccent(de_analito));
 
 
@@ -149,7 +149,7 @@ join pacientes p on d.id_paciente = p.id_paciente
 
 ------------------- EXERCICIO 03 -------------------
 -- Calcular numero de mortes de pessoas que tiveram resultado positivo em Covid-19
--- e tamb�m numero de mortes agrupados por decada de nascimento dos pacientes.
+-- e tambem numero de mortes agrupados por decada de nascimento dos pacientes.
 select count(*) as n_mortes from (
     select id_paciente as id_pacientes_positivos from exames e
     where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO%'   
@@ -232,8 +232,176 @@ select distinct
     cd_unidade,
     avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
 from exames e
-where lower(e.de_exame) like '%colesterol%' and de_resultado not like '%impossibilita%'
+where lower(e.de_analito) like '%colesterol%' and de_resultado not like '%impossibilita%'
 order by id_paciente, id_atendimento, id_paciente
+
+
+-- Pivot
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+
+select
+  ct.*,
+  de_desfecho
+from
+  crosstab($$select id_atendimento,
+  de_analito,
+  avg
+from
+  exames_colesterol
+order by
+  1,
+  2 $$,
+          $$(
+values('colesterol nao-hdl, soro'),
+                    ('colesterol total'),
+                    ('hdl-colesterol'),
+                    ('ldl colesterol'),
+                    ('v-colesterol'),
+                    ('vldl-colesterol'))$$
+  )
+             as ct (id_atendimento char(32),
+  "colesterol nao-hdl, soro" real,
+  "colesterol total" real,
+  "hdl-colesterol" real,
+  "ldl colesterol" real,
+  "v-colesterol" real,
+  "vldl-colesterol" real)
+inner join desfechos d on
+  d.id_atendimento = ct.id_atendimento;
+  
+
+------------------- EXERCICIO 07 -------------------
+  
+drop view if exists exames_hemograma;
+
+-- Cria view de auxilio (ignorando morfologias e plaquetas)
+create view exames_hemograma as
+select distinct
+    de_exame,
+    de_analito,
+    id_paciente,
+    id_atendimento,
+    dt_coleta,
+    cd_unidade,
+    avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
+from exames e
+where lower(e.de_exame) like '%hemograma%' and de_analito not like '%morfologia%' and de_analito <> 'plaquetas' 
+order by id_paciente, id_atendimento, id_paciente
+
+select
+    ct.*,
+    de_desfecho
+from
+    crosstab (
+ 'select id_atendimento,de_analito,avg from exames_hemograma order by 1,2',
+    $$(
+values('basofilos (%)'),
+                    ('basofilos'),
+                    ('bastonetes (%)'),
+                    ('bastonetes'),
+                    ('blastos (%)'),
+                    ('blastos'),
+                    ('chcm'),
+                    ('concentracao de hemoglobina corpuscular'),
+                    ('eosinofilos (%)'),
+                    ('eosinofilos'),
+                    ('eritrocitos'),
+                    ('racao imatura de plaquetas'),
+                    ('hcm'),
+                    ('hematocrito'),
+                    ('hemoglobina corpuscular media'),
+                    ('hemoglobina'),
+                    ('indice de green & king'),
+                    ('leucocitos'),
+                    ('linfocitos (%)'),
+                    ('linfocitos'),
+                    ('metamielocitos (%)'),
+                    ('metamielocitos'),
+                    ('mielocitos (%)'),
+                    ('mielocitos'),
+                    ('monocitos (%)'),
+                    ('monocitos'),
+                    ('neutrofilos (%)'),
+                    ('neutrofilos'),
+                    ('plasmocitos (%)'),
+                    ('plasmoticos'),
+                    ('promielocitos (%)'),
+                    ('promielocitos'),
+                    ('rdw'),
+                    ('segmentados (%)'),
+                    ('segmentados'),
+                    ('vcm'),
+                    ('volume plaquetario medio'))$$
+ )
+ as ct (
+    id_atendimento char(32),
+    "basofilos (%)" real,
+    "basofilos" real,
+    "bastonetes (%)" real,
+    "bastonetes" real,
+    "blastos (%)" real,
+    "blastos" real,
+    "chcm" real,
+    "concentracao de hemoglobina corpuscular" real,
+    "eosinofilos (%)" real,
+    "eosinofilos" real,
+    "eritrocitos" real,
+    "racao imatura de plaquetas" real,
+    "hcm" real,
+    "hematocrito" real,
+    "hemoglobina corpuscular media" real,
+    "hemoglobina" real,
+    "indice de green & king" real,
+    "leucocitos" real,
+    "linfocitos (%)" real,
+    "linfocitos" real,
+    "metamielocitos (%)" real,
+    "metamielocitos" real,
+    "mielocitos (%)" real,
+    "mielocitos" real,
+    "monocitos (%)" real,
+    "monocitos" real,
+    "neutrofilos (%)" real,
+    "neutrofilos" real,
+    "plasmocitos (%)" real,
+    "plasmoticos" real,
+    "promielocitos (%)" real,
+    "promielocitos" real,
+    "rdw" real,
+    "segmentados (%)" real,
+    "segmentados" real,
+    "vcm" real,
+    "volume plaquetario medio" real
+ )
+inner join desfechos d on
+    d.id_atendimento = ct.id_atendimento;
+
+
+------------------- EXERCICIO 08 -------------------
+drop view if exists exames_covid;
+
+create view exames_covid as
+select
+    id_exame, 
+    de_exame,
+    de_analito,
+    de_resultado,
+    NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') as valor_referencia,
+    case when de_resultado > NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'POSITIVO'
+    when de_resultado < NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'NEGATIVO'
+    when NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') = null then null
+    end as estado_result
+from exames e 
+where de_analito ilike '%covid%' and de_resultado ~ '^[0-9]*[.,]?[0-9]+$';
+
+/*  UPDATE DA TABELA COM VALOR DE POSITIVO E NEGATIVO
+update exames_covid set 
+de_resultado = case when de_resultado > valor_referencia then 'POSITIVO'
+    when de_resultado < valor_referencia then 'NEGATIVO'
+    when valor_referencia = null then null
+    end;
+*/
+
 
 
 
