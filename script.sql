@@ -8,7 +8,7 @@
 	Rodrigo Augusto Valeretto		NUSP: 10684792
 */
 ------------------------------------------------------------
-------------------- EXERCICIO 01 -------------------
+----------------------- EXERCICIO 01 -----------------------
 
 -- Criando tabelas principais
 drop table if exists Pacientes cascade;
@@ -64,16 +64,62 @@ from '/HSL_Junho2021/HSL_Exames_4.csv' delimiter '|' csv header;
 copy Desfechos from '/HSL_Junho2021/HSL_Desfechos_4.csv' delimiter '|' csv header;
 
 -- Tratamento dos dados
-
+-- Trocando valor de ano de nascimento indefinido para null e para aqueles que nasceram
+-- em 1930 ou antes setamos 1930 como padrao. Depois mudamos o tipo da coluna para inteiro.
 update pacientes set aa_nascimento = '1930' where aa_nascimento = 'AAAA';
 update pacientes set aa_nascimento = null where aa_nascimento = 'YYYY';
 alter table pacientes alter column aa_nascimento type integer using aa_nascimento::integer;
 
+-- Removendo todos os acentos dos analitos na tabela de exames
 create extension if not exists unaccent;
 update exames set de_analito = lower(unaccent(de_analito));
 
+-- Trocando todos os analitos de exames de deteccao de covid para
+-- 'deteccao covid'
+update exames set de_analito = 'DETECCAO COVID'
+where de_analito ilike 'coronavirus (2019-ncov)'
+or de_analito ilike 'covid 19, deteccao por pcr';
 
-------------------- EXERCICIO 02 -------------------
+-- Troca os diferentes resultados que correspondem a deteccao para o analito
+-- 2019-ncov pela string 'DETECTADO'
+update exames set de_resultado = 'DETECTADO'
+where de_analito = 'DETECCAO COVID' and de_resultado ilike 'DETECT%'; 
+
+-- Troca os diferentes resultados correspondentes a nao deteccao do analito
+-- ncov-2019 para 'NAO DETECTADO'
+update exames set de_resultado = 'NAO DETECTADO'
+where de_analito = 'DETECCAO COVID'
+and unaccent(de_resultado) ilike '%nao detectado%'
+or unaccent(de_resultado) ilike 'indetectavel';
+
+-- Troca de_resultado inconclusivo do analito 2019-ncov para a string 'INCONCLUSIVO'
+update exames set de_resultado = 'INCONCLUSIVO'
+where de_analito = 'DETECCAO COVID'
+and de_resultado ilike 'inconclusivo';
+
+-- Renomeando analitos de anticorpos igm
+update exames set de_analito = 'COVID 19 - ANTICORPOS IGM'
+where de_analito ilike 'covid 19, anticorpos igm, quimioluminescencia'
+or de_analito ilike 'covid 19, anticorpos igm, teste rapido';
+
+-- Renomeando analitos de anticorpos igg
+update exames set de_analito = 'COVID 19 - ANTICORPOS IGG'
+where de_analito ilike 'covid 19, anticorpos igg, quimioluminescencia'
+or de_analito ilike 'covid 19, anticorpos igg, teste rapido';
+
+-- Troca os diferentes resultados correspondentes a nao deteccao do analito
+-- para 'NAO REAGENTE'
+update exames set de_resultado = 'NAO REAGENTE'
+where (de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+and unaccent(de_resultado) ilike 'nao reagente';
+
+-- Troca os diferentes resultados correspondentes a indeterminacao do analito
+-- para 'INDETERMINADO'
+update exames set de_resultado = 'INDETERMINADO'
+where (de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+and unaccent(de_resultado) ilike 'indeterminado';
+
+----------------------- EXERCICIO 02 -----------------------
 
 -- 2.1 - TODO
 
@@ -128,7 +174,7 @@ select count(id_exame) as qnt_exames_covid from exames e where de_analito = 'cor
 
 -- Conta quantos exames de covid possuem resultado positivo
 select count(id_exame) as qnt_exames_covid_positivo from exames e
-where de_analito = 'coronavirus (2019-ncov)' and upper(de_resultado) like 'DETECTADO%';
+where de_analito = 'coronavirus (2019-ncov)' and de_resultado ilike 'DETECTADO';
 
 -- Questao estranha, perguntar pro prof
 select p.aa_nascimento, count(e.de_resultado) from exames e
@@ -147,26 +193,26 @@ select p.ic_sexo, mode() within group (order by de_desfecho) from desfechos d
 join pacientes p on d.id_paciente = p.id_paciente
 
 
-------------------- EXERCICIO 03 -------------------
+----------------------- EXERCICIO 03 -----------------------
 -- Calcular numero de mortes de pessoas que tiveram resultado positivo em Covid-19
 -- e tambem numero de mortes agrupados por decada de nascimento dos pacientes.
 select count(*) as n_mortes from (
     select id_paciente as id_pacientes_positivos from exames e
-    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO%'   
+    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO'   
 ) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
 where d.dt_desfecho like 'DDMMAA'
 
 select floor(p.aa_nascimento/10)*10 as decada_de_nascimento, count(p.id_paciente) as n_mortes
 from (
     select id_paciente as id_pacientes_positivos from exames e
-    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO%'   
+    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO'   
 ) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
 join pacientes p on p.id_paciente = id_pacientes_positivos 
 where d.dt_desfecho like 'DDMMAA'
 group by decada_de_nascimento order by decada_de_nascimento asc;
 
 
-------------------- EXERCICIO 04 -------------------
+----------------------- EXERCICIO 04 -----------------------
 -- 4.A - Select para buscar mais novos e mais velhos de cada cidade usando apenas group by
 select p.cd_municipio, p.id_paciente, date_part('year', now()) - p.aa_nascimento as idade from (
     select cd_municipio as min_max_mun, max(aa_nascimento) as ano_max, min(aa_nascimento) as ano_min
@@ -197,7 +243,7 @@ where p.aa_nascimento = p.ano_max or p.aa_nascimento = p.ano_min
 order by cd_municipio, idade;
 
 
-------------------- EXERCICIO 05 -------------------
+----------------------- EXERCICIO 05 -----------------------
 -- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada hospital
 -- Versao sem window function
 select de_origem, array_agg(distinct de_analito) from exames e
@@ -219,7 +265,7 @@ where row_number = 1
 
 -- 5.B
 
-------------------- EXERCICIO 06 -------------------
+----------------------- EXERCICIO 06 -----------------------
 drop view if exists exames_colesterol;
 
 -- Cria tabela de auxilio
@@ -270,7 +316,7 @@ inner join desfechos d on
   d.id_atendimento = ct.id_atendimento;
   
 
-------------------- EXERCICIO 07 -------------------
+----------------------- EXERCICIO 07 -----------------------
   
 drop view if exists exames_hemograma;
 
@@ -377,12 +423,13 @@ inner join desfechos d on
     d.id_atendimento = ct.id_atendimento;
 
 
-------------------- EXERCICIO 08 -------------------
+----------------------- EXERCICIO 08 -----------------------
 drop view if exists exames_covid;
 
 create view exames_covid as
 select
-    id_exame, 
+    id_exame,
+    id_atendimento,
     de_exame,
     de_analito,
     de_resultado,
@@ -401,6 +448,43 @@ de_resultado = case when de_resultado > valor_referencia then 'POSITIVO'
     when valor_referencia = null then null
     end;
 */
+
+----------------------- EXERCICIO 09 -----------------------
+
+-- Pivot
+CREATE EXTENSION IF NOT EXISTS tablefunc;
+
+select
+    *
+from
+    crosstab($$select id_atendimento,
+    de_analito,
+    estado_result
+from
+    exames_covid
+order by
+    1,
+    2 $$,
+                    $$(
+values('covid 19, anticorpos iga'), 
+                    ('covid 19, anticorpos iga, indice'),
+                    ('covid 19, anticorpos igg'),
+                    ('covid 19, anticorpos igg, indice'),
+                    ('covid 19, anticorpos igg, quimiolumin.-indice'),
+                    ('covid 19, anticorpos igm, quimiolumin.-indice'),
+                    ('covid 19, anticorpos totais, eletroquim-indic'),
+                    ('covid 19, anti-spike neutralizantes - indice'))$$
+    )
+             as ct (id_atendimento char(32),
+    "covid 19, anticorpos iga" varchar,
+    "covid 19, anticorpos iga, indice" varchar,
+    "covid 19, anticorpos igg" varchar,
+    "covid 19, anticorpos igg, indice" varchar,
+    "covid 19, anticorpos igg, quimiolumin.-indice" varchar,
+    "covid 19, anticorpos igm, quimiolumin.-indice" varchar,
+    "covid 19, anticorpos totais, eletroquim-indic" varchar,
+    "covid 19, anti-spike neutralizantes - indice" varchar)
+
 
 
 
