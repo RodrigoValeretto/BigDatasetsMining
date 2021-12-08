@@ -54,7 +54,6 @@ create table Desfechos(
 -- Configura banco para aceitar data no estilo DD/MM/YYYY
 set datestyle = 'ISO,DMY';
 
-
 -- Preenchendo tabelas com valores dos csvs
 copy Pacientes from '/HSL_Junho2021/HSL_Pacientes_4.csv' delimiter '|' csv header;
 
@@ -107,15 +106,21 @@ update exames set de_analito = 'COVID 19 - ANTICORPOS IGG'
 where de_analito ilike 'covid 19, anticorpos igg, quimioluminescencia'
 or de_analito ilike 'covid 19, anticorpos igg, teste rapido';
 
+-- Troca os diferentes resultados correspondentes a deteccao do analito
+-- para 'DETECTADO'
+update exames set de_resultado = 'DETECTADO'
+where (de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+and unaccent(de_resultado) ilike 'reagente';
+
 -- Troca os diferentes resultados correspondentes a nao deteccao do analito
--- para 'NAO REAGENTE'
-update exames set de_resultado = 'NAO REAGENTE'
+-- para 'NAO DETECTADO'
+update exames set de_resultado = 'NAO DETECTADO'
 where (de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
 and unaccent(de_resultado) ilike 'nao reagente';
 
 -- Troca os diferentes resultados correspondentes a indeterminacao do analito
--- para 'INDETERMINADO'
-update exames set de_resultado = 'INDETERMINADO'
+-- para 'INCONCLUSIVO'
+update exames set de_resultado = 'INCONCLUSIVO'
 where (de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
 and unaccent(de_resultado) ilike 'indeterminado';
 
@@ -170,17 +175,19 @@ select avg(n_exames) as media_exames_F from (
 	) as count_exames;
 	
 -- Conta quantos exames de covid foram solicitados
-select count(id_exame) as qnt_exames_covid from exames e where de_analito = 'coronavirus (2019-ncov)';
+select count(id_exame) as qnt_exames_covid from exames e
+where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG');
 
 -- Conta quantos exames de covid possuem resultado positivo
 select count(id_exame) as qnt_exames_covid_positivo from exames e
-where de_analito = 'coronavirus (2019-ncov)' and de_resultado ilike 'DETECTADO';
+where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+and de_resultado ilike 'DETECTADO';
 
--- Questao estranha, perguntar pro prof
-select p.aa_nascimento, count(e.de_resultado) from exames e
+-- Query que retorna quantas pessoas de cada idade obtiveram determinado resultado 
+select date_part('year', now()) - p.aa_nascimento as idade, de_resultado, count(e.de_resultado) from exames e
 join pacientes p on p.id_paciente = e.id_paciente 
-where de_analito = 'coronavirus (2019-ncov)'
-group by p.aa_nascimento
+where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+group by p.aa_nascimento, de_resultado 
 order by p.aa_nascimento asc;
 
 -- 2.4
@@ -197,15 +204,17 @@ join pacientes p on d.id_paciente = p.id_paciente
 -- Calcular numero de mortes de pessoas que tiveram resultado positivo em Covid-19
 -- e tambem numero de mortes agrupados por decada de nascimento dos pacientes.
 select count(*) as n_mortes from (
-    select id_paciente as id_pacientes_positivos from exames e
-    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO'   
+    select distinct id_paciente as id_pacientes_positivos from exames e
+    where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+    and de_resultado like 'DETECTADO'   
 ) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
 where d.dt_desfecho like 'DDMMAA'
 
 select floor(p.aa_nascimento/10)*10 as decada_de_nascimento, count(p.id_paciente) as n_mortes
 from (
-    select id_paciente as id_pacientes_positivos from exames e
-    where de_analito = 'coronavirus (2019-ncov)' and de_resultado like 'DETECTADO'   
+    select distinct id_paciente as id_pacientes_positivos from exames e
+    where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
+    and de_resultado like 'DETECTADO'   
 ) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
 join pacientes p on p.id_paciente = id_pacientes_positivos 
 where d.dt_desfecho like 'DDMMAA'
