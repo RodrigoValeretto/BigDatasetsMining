@@ -363,7 +363,7 @@ select count(*) as n_mortes from (
     where (de_analito = 'DETECCAO COVID' or de_analito = 'COVID 19 - ANTICORPOS IGM' or de_analito = 'COVID 19 - ANTICORPOS IGG')
     and de_resultado like 'DETECTADO'   
 ) as consulta_positivos join desfechos d on d.id_paciente = id_pacientes_positivos
-where d.dt_desfecho like 'DDMMAA'
+where d.dt_desfecho like 'DDMMAA';
 
 select floor(p.aa_nascimento/10)*10 as decada_de_nascimento, count(p.id_paciente) as n_mortes
 from (
@@ -383,7 +383,7 @@ select p.cd_municipio, p.id_paciente, date_part('year', now()) - p.aa_nascimento
     from pacientes
     group by cd_municipio
 ) as min_max_anos, pacientes p where (p.aa_nascimento = ano_max or p.aa_nascimento = ano_min) and p.cd_municipio = min_max_mun
-order by cd_municipio, idade asc
+order by cd_municipio, idade asc;
 
 -- 4.B - Select para buscar mais novos e mais velhos de cada cidade usando with
 with min_max_anos as (
@@ -393,7 +393,7 @@ with min_max_anos as (
 ) 
 select p.cd_municipio, p.id_paciente, date_part('year', now()) - p.aa_nascimento as idade from min_max_anos, pacientes p
 where (p.aa_nascimento = ano_max or p.aa_nascimento = ano_min) and p.cd_municipio = min_max_mun
-order by cd_municipio, idade asc
+order by cd_municipio, idade asc;
 
 -- 4.C - Select para buscar mais novos e mais velhos de cada cidade usando window function
 
@@ -425,7 +425,7 @@ from
 where
     upper(e.de_exame) like '%HEMOGRAMA%' 
     ) as p 
-where row_number = 1
+where row_number = 1;
 
 -- 5.B
 
@@ -443,7 +443,7 @@ select distinct
     avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
 from exames e
 where lower(e.de_analito) like '%colesterol%' and de_resultado not like '%impossibilita%'
-order by id_paciente, id_atendimento, id_paciente
+order by id_paciente, id_atendimento, id_paciente;
 
 
 -- Pivot
@@ -496,7 +496,7 @@ select distinct
     avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
 from exames e
 where lower(e.de_exame) like '%hemograma%' and de_analito not like '%morfologia%' and de_analito <> 'plaquetas' 
-order by id_paciente, id_atendimento, id_paciente
+order by id_paciente, id_atendimento, id_paciente;
 
 select
     ct.*,
@@ -687,7 +687,7 @@ on
 -- Histograma equilargura com 10 bins
 with MinMax as
 (
-select
+SELECT
     9 as NB,
     Min(2020 - p.aa_nascimento) as Mi,
     Max(2020 - p.aa_nascimento) as Ma
