@@ -452,6 +452,10 @@ where e.de_exame ilike '%hemograma%'
 order by de_analito;
 
 ----------------------- EXERCICIO 06 -----------------------
+-- Assumimos que v-colesterol é a medida de vldl-colesterol
+update exames set de_analito = 'vldl-colesterol'
+where de_analito = 'v-colesterol';
+
 drop view if exists exames_colesterol;
 
 -- Cria tabela de auxilio
@@ -464,7 +468,7 @@ select distinct
     cd_unidade,
     avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
 from exames e
-where lower(e.de_analito) like '%colesterol%' and de_resultado not like '%impossibilita%'
+where e.de_analito ilike '%colesterol%' and de_resultado not like '%impossibilita%'
 order by id_paciente, id_atendimento, id_paciente;
 
 
@@ -488,7 +492,6 @@ values('colesterol nao-hdl, soro'),
                     ('colesterol total'),
                     ('hdl-colesterol'),
                     ('ldl colesterol'),
-                    ('v-colesterol'),
                     ('vldl-colesterol'))$$
   )
              as ct (id_atendimento char(32),
@@ -496,7 +499,6 @@ values('colesterol nao-hdl, soro'),
   "colesterol total" real,
   "hdl-colesterol" real,
   "ldl colesterol" real,
-  "v-colesterol" real,
   "vldl-colesterol" real)
 inner join desfechos d on
   d.id_atendimento = ct.id_atendimento;
@@ -799,3 +801,90 @@ order by
 	origem,
 	contagem desc --ordernar pela contagem ou exames em ordem alfabetica?
 ;
+
+----------------------- EXERCICIO 12 -----------------------
+
+-- Extrair as medidas de cada analito como um atributo de tipo numérico
+--(evitando erros de conversão quando o atributo original contiver apenas texto)
+
+-- Criando uma tabela a partir da consulta do Exercício 06
+drop table if exists exames_colesterol_crosstab;
+
+create table exames_colesterol_crosstab as 
+select
+  ct.*,
+  de_desfecho
+from
+  crosstab($$select id_atendimento,
+  de_analito,
+  avg
+from
+  exames_colesterol
+order by
+  1,
+  2 $$,
+          $$(
+values('colesterol nao-hdl, soro'),
+                    ('colesterol total'),
+                    ('hdl-colesterol'),
+                    ('ldl colesterol'),
+                    ('vldl-colesterol'))$$
+  )
+             as ct (id_atendimento char(32),
+  "colesterol nao-hdl, soro" real,
+  "colesterol total" real,
+  "hdl colesterol" real,
+  "ldl colesterol" real,
+  "vldl colesterol" real)
+inner join desfechos d on
+  d.id_atendimento = ct.id_atendimento;
+ 
+-- Reduzir a quantidade de valores que estão nulos.
+
+-- a partir do hdl e total
+update exames_colesterol_crosstab set "colesterol nao-hdl, soro" = ("colesterol total" - "hdl colesterol")
+where "colesterol nao-hdl, soro" is null
+and "hdl colesterol" is not null
+and "colesterol total" is not null;
+
+------- CAlCULAR VLDL-COLESTEROL
+-- vldl = nao_HDL - LDL
+update exames_colesterol_crosstab set "vldl colesterol" = ("colesterol nao-hdl, soro" - "ldl colesterol")
+where "vldl colesterol" is null
+and "colesterol nao-hdl, soro" is not null
+and "ldl colesterol" is not null;
+
+-- a partir de vldl e ldl (+2)
+update exames_colesterol_crosstab set "colesterol nao-hdl, soro" = ("vldl colesterol" + "ldl colesterol")
+where "colesterol nao-hdl, soro" is null
+and "vldl colesterol" is not null
+and "ldl colesterol" is not null;
+
+------- CAlCULAR HDL-COLESTEROL
+-- a partir de total - nao_hdl
+update exames_colesterol_crosstab set "hdl colesterol" = ("colesterol total" - "colesterol nao-hdl, soro")
+where "hdl colesterol" is null 
+and "colesterol total" is not null
+and "colesterol nao-hdl, soro" is not null;
+
+------- CAlCULAR LDL-COLESTEROL
+-- a pratir do nao_hdl e vldl
+update exames_colesterol_crosstab set "ldl colesterol" = ("colesterol nao-hdl, soro" - "vldl colesterol")
+where "ldl colesterol" is null
+and "colesterol nao-hdl, soro" is not null
+and "vldl colesterol" is not null;
+
+-------- LIMPEZA DE DADOS FORA DO PADRAO ---------
+delete from exames_colesterol_crosstab ecc
+where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1
+
+select * from exames_colesterol_crosstab ecc 
+
+/* Considerando a maneira como essa tabela foi gerada, incluindo quatro analitos, e sabendo como eles 
+ * estão correlacionados, qual é a maior dimensão fractal possı́vel para esses atributos?  
+ */
+
+
+/*
+ * Calcule a dimensão fractal dos exames de colesterol, e dê a sua interpretação do resultado.
+ */
