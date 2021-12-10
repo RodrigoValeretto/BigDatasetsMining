@@ -426,10 +426,10 @@ order by cd_municipio, idade;
 
 
 ----------------------- EXERCICIO 05 -----------------------
--- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada hospital
+-- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada origem
 -- Versao sem window function
 select de_origem, array_agg(distinct de_analito) from exames e
-where upper(e.de_exame) like '%HEMOGRAMA%'
+where e.de_exame ilike '%hemograma%'
 group by de_origem;
     
 -- Versao com window function
@@ -441,11 +441,15 @@ select
 from
     exames e
 where
-    upper(e.de_exame) like '%HEMOGRAMA%' 
+    e.de_exame ilike '%hemograma%'
     ) as p 
 where row_number = 1;
 
 -- 5.B
+-- Não existem diferentes nomes para um mesmo analito
+select distinct de_analito from exames e
+where e.de_exame ilike '%hemograma%'
+order by de_analito;
 
 ----------------------- EXERCICIO 06 -----------------------
 drop view if exists exames_colesterol;
