@@ -427,7 +427,7 @@ order by cd_municipio, idade;
 
 ----------------------- EXERCICIO 05 -----------------------
 -- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada hospital
--- Versao sem window function function
+-- Versao sem window function
 select de_origem, array_agg(distinct de_analito) from exames e
 where upper(e.de_exame) like '%HEMOGRAMA%'
 group by de_origem;
