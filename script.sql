@@ -346,14 +346,32 @@ group by p.aa_nascimento, de_resultado
 order by p.aa_nascimento asc;
 
 -- 2.4
-select mode() within group (order by de_desfecho) from desfechos;
+-- Desfecho para a maioria dos casos registrados
+select mode() within group (order by de_desfecho) desfecho_maioria from desfechos;
 
-select d.de_desfecho, d.id_paciente from desfechos d where lower(d.de_desfecho) <> 'alta administrativa';
+-- Visualizar a quantidade de cada desfecho
+select de_desfecho, count(de_desfecho) as contagem from desfechos d
+group by de_desfecho
+order by contagem desc;
 
--- TODO Ultimo topico
-select p.ic_sexo, mode() within group (order by de_desfecho) from desfechos d
-join pacientes p on d.id_paciente = p.id_paciente;
+-- Visualizar a quantidade de cada desfecho mas com window function
+select distinct de_desfecho , count(de_desfecho) over (partition by de_desfecho) contagem from desfechos
+order by contagem desc;
 
+-- Desfechos maioria para cada genero
+select p.ic_sexo, mode() within group (order by de_desfecho) desfecho_maioria from desfechos d
+join pacientes p on d.id_paciente = p.id_paciente
+group by p.ic_sexo;
+
+-- Desfechos maioria por década de vida
+select floor(aa_nascimento/10)*10 as decada, mode() within group (order by de_desfecho) desfecho_maioria from desfechos d
+join pacientes p on d.id_paciente = p.id_paciente
+group by decada;
+
+-- Desfechos maioria por idade
+select (2020 -aa_nascimento) as decada, mode() within group (order by de_desfecho) desfecho_maioria from desfechos d
+join pacientes p on d.id_paciente = p.id_paciente
+group by decada;
 
 ----------------------- EXERCICIO 03 -----------------------
 -- Calcular numero de mortes de pessoas que tiveram resultado positivo em Covid-19
@@ -408,10 +426,10 @@ order by cd_municipio, idade;
 
 
 ----------------------- EXERCICIO 05 -----------------------
--- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada hospital
+-- 5.A - Consulta para mostrar quaais analitos podem ser medidos em exames de 'hemograma' em cada origem
 -- Versao sem window function
 select de_origem, array_agg(distinct de_analito) from exames e
-where upper(e.de_exame) like '%HEMOGRAMA%'
+where e.de_exame ilike '%hemograma%'
 group by de_origem;
     
 -- Versao com window function
@@ -423,11 +441,15 @@ select
 from
     exames e
 where
-    upper(e.de_exame) like '%HEMOGRAMA%' 
+    e.de_exame ilike '%hemograma%'
     ) as p 
 where row_number = 1;
 
 -- 5.B
+-- Não existem diferentes nomes para um mesmo analito
+select distinct de_analito from exames e
+where e.de_exame ilike '%hemograma%'
+order by de_analito;
 
 ----------------------- EXERCICIO 06 -----------------------
 drop view if exists exames_colesterol;
@@ -716,13 +738,64 @@ from
 
 ----------------------- EXERCICIO 11 -----------------------
 
+----------- CONSULTAS DE TESTE  ---------
+select distinct de_origem from exames;
+select distinct de_origem from exames
+where de_origem ilike '%UTI%';
+select distinct de_exame from exames
+where de_exame ilike '%cov%';
+-----------------------------------------
 
+-- Cria vista de auxilio
+drop view if exists exames_contabilizados;
+create view exames_contabilizados as
+select
+	case
+		when de_origem ilike '%hos%'
+		  or de_origem ilike '%UTI%' 
+            then 'Hosp'
+        when 
+        	de_origem ilike '%lab%'
+        	then 'Lab'
+        when de_origem ilike '%atend%'
+          or de_origem ilike '%interna%'
+          or de_origem ilike '%pronto%'
+        	then 'Atend'
+		else 'Outros'
+	end as de_origem,
+	case
+		when de_exame ilike '%hemograma%'
+            then 'Hemograma'
+        when de_exame ilike '%colesterol%'
+        	then 'Colesterol'
+        when de_exame ilike '%cov%'
+          or de_exame  ilike '%corona%'
+        	then 'Covid'
+		else 'Outros'
+	end as de_exame
+from exames e;
 
-
-
-
-
-
-
-
-
+-- Histograma
+select
+	de_hospital,
+	origem,
+	exame,
+	contagem
+from
+	(
+	select
+		'HSL' as de_hospital,
+		de_origem as origem,
+		de_exame as exame,
+		count(*) as contagem
+	from
+		exames_contabilizados e
+	group by
+		origem,
+		exame
+) tabela_agrupada
+order by
+	de_hospital,
+	origem,
+	contagem desc --ordernar pela contagem ou exames em ordem alfabetica?
+;
