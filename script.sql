@@ -934,23 +934,6 @@ alter table exames_colesterol_crosstab drop column "colesterol nao-hdl, soro";
 select * from exames_colesterol_crosstab ecc
 where id_atendimento ilike '%A';
 
-select
-	ecc1."colesterol total" as ct1,
-	ecc1."hdl colesterol" as hc1,
-	ecc1."ldl colesterol" as lc1,
-	ecc1."vldl colesterol" as vc1,
-	ecc2."colesterol total" as ct2,
-	ecc2."hdl colesterol" as hc2,
-	ecc2."ldl colesterol" as lc2,
-	ecc2."vldl colesterol" as vc2,
-	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"], 
-				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
-from
-	exames_colesterol_crosstab ecc1
-cross join exames_colesterol_crosstab ecc2
-	where ecc1.id_atendimento ilike '%A'
-	and ecc2.id_atendimento ilike '%A';
-
 /*
  * Calcule a dimensao fractal dos exames de colesterol, e deem a sua interpretacao do resultado.
  */
@@ -961,6 +944,23 @@ create function EuclideanDist(real[], real[]) returns float as
 					 ($1[3] - $2[3])^2 + ($1[4] - $2[4])^2);' 
 language sql immutable 
 returns null on null input;
+
+select
+	ecc1."colesterol total" as ct1,
+	ecc1."hdl colesterol" as hc1,
+	ecc1."ldl colesterol" as lc1,
+	ecc1."vldl colesterol" as vc1,
+	ecc2."colesterol total" as ct2,
+	ecc2."hdl colesterol" as hc2,
+	ecc2."ldl colesterol" as lc2,
+	ecc2."vldl colesterol" as vc2,
+	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"],
+				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
+from
+	exames_colesterol_crosstab ecc1
+cross join exames_colesterol_crosstab ecc2
+	where ecc1.id_atendimento ilike '%A'
+	and ecc2.id_atendimento ilike '%A';
 
 /*with Grid as (
 select
