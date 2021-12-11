@@ -72,7 +72,7 @@ alter table pacientes alter column aa_nascimento type integer using aa_nasciment
 -- Trocando o valor do UF para nulo nos dados anonimizados
 update pacientes set cd_uf = null where cd_uf = 'UU';
 
--- Trocando o valor do Município para nulo nos dados anonimizados ou de estrangeiros
+-- Trocando o valor do MunicÃ­pio para nulo nos dados anonimizados ou de estrangeiros
 update pacientes set cd_municipio = null where cd_municipio = 'MMMM';
 
 -- Trocando o valor do CEP para nulo nos dados anonimizados ou de estrangeiros
@@ -138,64 +138,64 @@ and unaccent(de_resultado) ilike 'indeterminado';
 -- 2.1
 -------------------- TABELA Pacientes
 -------- ID_PACIENTE
--- Número de Pacientes
+-- NÃºmero de Pacientes
 select count(id_paciente) as n_atendimentos from pacientes p;
 
 -------- IC_SEXO
--- Distribuição dos sexos
+-- DistribuiÃ§Ã£o dos sexos
 select ic_sexo, count(ic_sexo) from pacientes p
 group by ic_sexo;
 
 -------- AA_NASCIMENTO
--- Número de Idades Anonimizadas (nulas após nossa limpeza)
+-- NÃºmero de Idades Anonimizadas (nulas apÃ³s nossa limpeza)
 select count(*) as n_nulos_idade from pacientes p
 where aa_nascimento is null;
--- Variância da idade
+-- VariÃ¢ncia da idade
 select var_samp(aa_nascimento) from pacientes p;
--- Desvio Padrão da idade
+-- Desvio PadrÃ£o da idade
 select stddev_samp(aa_nascimento) from pacientes p;
 
 -------- CD_PAIS
--- Número de Estrangeiros
+-- NÃºmero de Estrangeiros
 select count(*) as n_estrangeiros from pacientes p
 where cd_pais = 'XX';
 
 -------- CD_UF
--- Distribuição dos UF
+-- DistribuiÃ§Ã£o dos UF
 select cd_uf, count(cd_uf) from pacientes p
 where cd_uf is not null
 group by cd_uf;
--- Número de Anonimizados (nulos após nossa limpeza)
+-- NÃºmero de Anonimizados (nulos apÃ³s nossa limpeza)
 select count(*) as n_nulos from pacientes p
 where cd_uf is null;
 
 -------- CD_MUNICIPIO
--- Distribuição dos Municipios
+-- DistribuiÃ§Ã£o dos Municipios
 select cd_municipio, count(cd_municipio) from pacientes p
 where cd_municipio is not null
 group by cd_municipio;
--- Número de Anonimizados (nulos após nossa limpeza)
+-- NÃºmero de Anonimizados (nulos apÃ³s nossa limpeza)
 select count(*) as n_nulos from pacientes p
 where cd_municipio is null;
 
 -------- CD_CEPREDUZIDO
--- Distribuição dos CEPS
+-- DistribuiÃ§Ã£o dos CEPS
 select cd_cepreduzido, count(cd_cepreduzido) from pacientes p
 where cd_cepreduzido is not null
 group by cd_cepreduzido;
--- Número de Anonimizados (nulos após nossa limpeza)
+-- NÃºmero de Anonimizados (nulos apÃ³s nossa limpeza)
 select count(*) as n_nulos from pacientes p
 where cd_cepreduzido is null;
 
 -------------------- TABELA Exames
 -------- ID_PACIENTE
--- Número de pacientes que pediram exames
+-- NÃºmero de pacientes que pediram exames
 select count(distinct id_paciente) as n_atendimentos from exames e;
 
 -------- ID_ATENDIMENTO
--- Número de atendimentos
+-- NÃºmero de atendimentos
 select count(distinct id_atendimento) as n_atendimentos from exames e;
--- Média de exames por atendimento	
+-- MÃ©dia de exames por atendimento	
 select
 	avg(numero_exames)
 from
@@ -206,7 +206,7 @@ from
 		exames e) as a;
 
 -------- DT_COLETA
--- Média de coletas por dia	
+-- MÃ©dia de coletas por dia	
 select
 	avg(numero_coletas) as media_coletas_dia
 from
@@ -217,21 +217,21 @@ from
 		exames e) as a;
 	
 -------- DE_ORIGEM
--- Número de origens existentes
+-- NÃºmero de origens existentes
 select count(distinct de_origem) as n_origens from exames e;
--- Distribuição das origens
+-- DistribuiÃ§Ã£o das origens
 select de_origem, count(de_origem) from exames e
 where de_origem is not null
 group by de_origem;
 
 -------- DE_EXAME
--- Número total de exames realizados
+-- NÃºmero total de exames realizados
 select count(de_exame) as numero_exames from exames e;
--- Número de tipos de exames existentes na tabela
+-- NÃºmero de tipos de exames existentes na tabela
 select count(distinct de_exame) as numero_distinto_exames from exames e;
 
 -------- DE_ANALITO
--- Número de tipos de analitoss existentes na tabela
+-- NÃºmero de tipos de analitoss existentes na tabela
 select count(distinct de_analito) as numero_distinto_analitos from exames e;
 
 -------- DE_RESULTADO
@@ -363,7 +363,7 @@ select p.ic_sexo, mode() within group (order by de_desfecho) desfecho_maioria fr
 join pacientes p on d.id_paciente = p.id_paciente
 group by p.ic_sexo;
 
--- Desfechos maioria por década de vida
+-- Desfechos maioria por dÃ©cada de vida
 select floor(aa_nascimento/10)*10 as decada, mode() within group (order by de_desfecho) desfecho_maioria from desfechos d
 join pacientes p on d.id_paciente = p.id_paciente
 group by decada;
@@ -446,13 +446,13 @@ where
 where row_number = 1;
 
 -- 5.B
--- Não existem diferentes nomes para um mesmo analito
+-- NÃ£o existem diferentes nomes para um mesmo analito
 select distinct de_analito from exames e
 where e.de_exame ilike '%hemograma%'
 order by de_analito;
 
 ----------------------- EXERCICIO 06 -----------------------
--- Assumimos que v-colesterol é a medida de vldl-colesterol
+-- Assumimos que v-colesterol Ã© a medida de vldl-colesterol
 update exames set de_analito = 'vldl-colesterol'
 where de_analito = 'v-colesterol';
 
@@ -519,7 +519,7 @@ select distinct
     cd_unidade,
     avg(to_number(de_resultado, '99999999D9999999')) over (partition by id_paciente, dt_coleta, de_analito)
 from exames e
-where lower(e.de_exame) like '%hemograma%' and de_analito not like '%morfologia%' and de_analito <> 'plaquetas' 
+where e.de_exame ilike '%hemograma%' and de_analito not like '%morfologia%' and de_analito <> 'plaquetas' 
 order by id_paciente, id_atendimento, id_paciente;
 
 select
@@ -612,42 +612,51 @@ inner join desfechos d on
 
 
 ----------------------- EXERCICIO 08 -----------------------
-drop view if exists exames_covid;
+drop table if exists exames_covid;
 
-create view exames_covid as
+create table exames_covid as
 select
     id_exame,
+    id_paciente,
     id_atendimento,
+    dt_coleta,
     de_exame,
     de_analito,
-    de_resultado,
     NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') as valor_referencia,
     case when de_resultado > NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'POSITIVO'
     when de_resultado < NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'NEGATIVO'
     when NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') = null then null
-    end as estado_result
+    end as de_resultado
 from exames e 
 where de_analito ilike '%covid%' and de_resultado ~ '^[0-9]*[.,]?[0-9]+$';
-
-/*  UPDATE DA TABELA COM VALOR DE POSITIVO E NEGATIVO
-update exames_covid set 
-de_resultado = case when de_resultado > valor_referencia then 'POSITIVO'
-    when de_resultado < valor_referencia then 'NEGATIVO'
-    when valor_referencia = null then null
-    end;
-*/
 
 ----------------------- EXERCICIO 09 -----------------------
 
 -- Pivot
 CREATE EXTENSION IF NOT EXISTS tablefunc;
 
+drop view if exists exames_covid_ct;
+
+-- Cria uma view auxiliar, semelhante a do hemograma
+create view exames_covid_ct as
 select
-    *
+    *,
+    case when (
+    'POSITIVO' in (    "iga",
+    "iga, indice",
+    "igg",
+    "igg, indice",
+    "igg, quimio",
+    "igm, quimio" ,
+    "anticorpos totais",
+    "anti-spike neutralizantes")
+    )then 'POSITIVO'
+    	else 'NEGATIVO'
+   	end as resultado_agregado
 from
     crosstab($$select id_atendimento,
     de_analito,
-    estado_result
+    de_resultado
 from
     exames_covid
 order by
@@ -664,15 +673,40 @@ values('covid 19, anticorpos iga'),
                     ('covid 19, anti-spike neutralizantes - indice'))$$
     )
              as ct (id_atendimento char(32),
-    "covid 19, anticorpos iga" varchar,
-    "covid 19, anticorpos iga, indice" varchar,
-    "covid 19, anticorpos igg" varchar,
-    "covid 19, anticorpos igg, indice" varchar,
-    "covid 19, anticorpos igg, quimiolumin.-indice" varchar,
-    "covid 19, anticorpos igm, quimiolumin.-indice" varchar,
-    "covid 19, anticorpos totais, eletroquim-indic" varchar,
-    "covid 19, anti-spike neutralizantes - indice" varchar);    
+    "iga" varchar,
+    "iga, indice" varchar,
+    "igg" varchar,
+    "igg, indice" varchar,
+    "igg, quimio" varchar,
+    "igm, quimio" varchar,
+    "anticorpos totais" varchar,
+    "anti-spike neutralizantes" varchar);
 
+-- Consulta para ver o numero de dias entre um resultado positivo e um futuro resultado negativo para um mesmo paciente.
+select distinct
+	calculo_positivo.*,
+	max(dt_coleta) filter (
+	where resultado_agregado = 'NEGATIVO'
+	and dt_coleta > Primeiro_Positivo) over (partition by id_paciente) Primeiro_Negativo,
+	(max(dt_coleta) filter (
+	where resultado_agregado = 'NEGATIVO'
+	and dt_coleta > Primeiro_Positivo) over (partition by id_paciente)) - Primeiro_Positivo as Dias_Diferenca
+from
+	(
+	select
+		ct.*, dt_coleta, id_paciente, min(dt_coleta) filter (
+		where resultado_agregado = 'POSITIVO') over (partition by id_paciente) Primeiro_Positivo
+	from
+		exames_covid_ct as ct
+	inner join (
+		select
+			id_atendimento, id_paciente, dt_coleta
+		from
+			exames_covid) as e on
+		e.id_atendimento = ct.id_atendimento) as calculo_positivo
+where
+	Primeiro_Positivo is not null;
+ 
 ----------------------- EXERCICIO 10 -----------------------
 -- ITEM 1
 -- Histograma equi-largura de distribuicao das idades dos pacientes
@@ -779,35 +813,26 @@ from exames e;
 
 -- Histograma
 select
-	de_hospital,
-	origem,
-	exame,
-	contagem
+	'HSL' as de_hospital,
+	de_origem as origem,
+	de_exame as exame,
+	count(*) as contagem
 from
-	(
-	select
-		'HSL' as de_hospital,
-		de_origem as origem,
-		de_exame as exame,
-		count(*) as contagem
-	from
-		exames_contabilizados e
-	group by
-		origem,
-		exame
-) tabela_agrupada
-order by
-	de_hospital,
+	exames_contabilizados e
+group by
 	origem,
-	contagem desc --ordernar pela contagem ou exames em ordem alfabetica?
-;
+	exame
+order by
+de_hospital,
+origem,
+contagem desc;
 
 ----------------------- EXERCICIO 12 -----------------------
 
--- Extrair as medidas de cada analito como um atributo de tipo numérico
---(evitando erros de conversão quando o atributo original contiver apenas texto)
+-- Extrair as medidas de cada analito como um atributo de tipo numerico
+--(evitando erros de conversao quando o atributo original contiver apenas texto)
 
--- Criando uma tabela a partir da consulta do Exercício 06
+-- Criando uma tabela a partir da consulta do Exercicio 06
 drop table if exists exames_colesterol_crosstab;
 
 create table exames_colesterol_crosstab as 
@@ -839,7 +864,7 @@ values('colesterol nao-hdl, soro'),
 inner join desfechos d on
   d.id_atendimento = ct.id_atendimento;
  
--- Reduzir a quantidade de valores que estão nulos.
+-- Reduzir a quantidade de valores que estÃ£o nulos.
 
 -- a partir do hdl e total
 update exames_colesterol_crosstab set "colesterol nao-hdl, soro" = ("colesterol total" - "hdl colesterol")
@@ -854,7 +879,7 @@ where "vldl colesterol" is null
 and "colesterol nao-hdl, soro" is not null
 and "ldl colesterol" is not null;
 
--- a partir de vldl e ldl (+2)
+-- a partir de vldl e ldl
 update exames_colesterol_crosstab set "colesterol nao-hdl, soro" = ("vldl colesterol" + "ldl colesterol")
 where "colesterol nao-hdl, soro" is null
 and "vldl colesterol" is not null
@@ -878,13 +903,119 @@ and "vldl colesterol" is not null;
 delete from exames_colesterol_crosstab ecc
 where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1
 
-select * from exames_colesterol_crosstab ecc 
+select * from exames_colesterol_crosstab ecc;
+
+-- Uns testes pra ver a contagem de nulos
+select count(*) from exames_colesterol_crosstab ecc
+where "colesterol nao-hdl, soro" is null
+or "colesterol total" is null
+or "hdl colesterol" is null
+or "ldl colesterol" is null
+or "vldl colesterol" is null;
+-- 2643 tuplas contem nulos antes
+-- 87 tuplas contem nulos depois
+
+select count(*) from exames_colesterol_crosstab ecc
+where "colesterol nao-hdl, soro" is not null
+and "colesterol total" is not null
+and "hdl colesterol" is not null
+and "ldl colesterol" is not null
+and "vldl colesterol" is not null;
+-- 2265 tuplas não contem nulos antes
+-- 4807 tuplas não contem nulos depois
 
 /* Considerando a maneira como essa tabela foi gerada, incluindo quatro analitos, e sabendo como eles 
- * estão correlacionados, qual é a maior dimensão fractal possı́vel para esses atributos?  
+ * estao correlacionados, qual e a maior dimensao fractal possivel para esses atributos?  
  */
 
+--Não precisamos mais desse analito
+alter table exames_colesterol_crosstab drop column "colesterol nao-hdl, soro";
+
+select * from exames_colesterol_crosstab ecc
+where id_atendimento ilike '%A';
+
+select
+	ecc1."colesterol total" as ct1,
+	ecc1."hdl colesterol" as hc1,
+	ecc1."ldl colesterol" as lc1,
+	ecc1."vldl colesterol" as vc1,
+	ecc2."colesterol total" as ct2,
+	ecc2."hdl colesterol" as hc2,
+	ecc2."ldl colesterol" as lc2,
+	ecc2."vldl colesterol" as vc2,
+	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"], 
+				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
+from
+	exames_colesterol_crosstab ecc1
+cross join exames_colesterol_crosstab ecc2
+	where ecc1.id_atendimento ilike '%A'
+	and ecc2.id_atendimento ilike '%A';
 
 /*
- * Calcule a dimensão fractal dos exames de colesterol, e dê a sua interpretação do resultado.
+ * Calcule a dimensao fractal dos exames de colesterol, e deem a sua interpretacao do resultado.
  */
+drop function if exists EuclideanDist(real[], real[]);
+
+create function EuclideanDist(real[], real[]) returns float as 
+		'select sqrt(($1[1] - $2[1])^2 + ($1[2] - $2[2])^2 + 
+					 ($1[3] - $2[3])^2 + ($1[4] - $2[4])^2);' 
+language sql immutable 
+returns null on null input;
+
+/*with Grid as (
+select
+	ecc1."colesterol total" as ct1,
+	ecc1."hdl colesterol" as hc1,
+	ecc1."ldl colesterol" as lc1,
+	ecc1."vldl colesterol" as vc1,
+	ecc2."colesterol total" as ct2,
+	ecc2."hdl colesterol" as hc2,
+	ecc2."ldl colesterol" as lc2,
+	ecc2."vldl colesterol" as vc2,
+	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"], 
+				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
+from
+	exames_colesterol_crosstab ecc1
+cross join exames_colesterol_crosstab ecc2),
+Contagem as (
+select
+	ct1,
+	hc1,
+	lc1,
+	vc1,
+	ct2,
+	hc2,
+	lc2,
+	vc2,
+	Dist,
+	ROUND(128 * Percent_Rank() over (order by Dist)) Pos --> 7 divisoes
+	from Grid ),
+DistExp as (
+select
+	Pos,
+	Avg(Dist) ADist,
+	Count(Pos),
+	Sum(Count(Pos)) over (
+	order by Pos asc rows between unbounded preceding and current row) PDF
+from
+	Contagem
+where
+	Dist > 0
+	and Pos > 0
+group by
+	Pos
+order by
+	Pos)
+select
+	regr_slope(Log(Pos), Log(PDF)) Slope, --> Dimensao Fractal
+ regr_intercept(Log(Pos), Log(PDF)) Intercept
+from
+	DistExp ;*/
+
+--- 128
+-- slope: 1.0005853569094085
+-- intercept: -5.276227192610893
+
+--- 32
+-- slope: 1.0015382080977138
+-- intercept: -5.884653364248793
