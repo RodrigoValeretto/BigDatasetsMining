@@ -82,7 +82,7 @@ and "vldl colesterol" is not null;
 
 -------- LIMPEZA DE DADOS FORA DO PADRAO ---------
 delete from exames_colesterol_crosstab ecc
-where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1
+where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1;
 
 -- Uns testes pra ver a contagem de nulos
 select count(*) from exames_colesterol_crosstab ecc

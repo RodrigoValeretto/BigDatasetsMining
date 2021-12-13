@@ -64,26 +64,34 @@ values('covid 19, anticorpos iga'),
     "anti-spike neutralizantes" varchar);
 
 -- Consulta para ver o numero de dias entre um resultado positivo e um futuro resultado negativo para um mesmo paciente.
-select distinct
-	calculo_positivo.*,
-	max(dt_coleta) filter (
-	where resultado_agregado = 'NEGATIVO'
-	and dt_coleta > Primeiro_Positivo) over (partition by id_paciente) Primeiro_Negativo,
+select distinct 
+	calculo_positivo.id_atendimento,
+	calculo_positivo."iga",
+	calculo_positivo."iga, indice",
+	calculo_positivo."igg",
+	calculo_positivo."igg, indice",
+	calculo_positivo."igg, quimio",
+	calculo_positivo."igm, quimio",
+	calculo_positivo."anticorpos totais",
+	calculo_positivo."anti-spike neutralizantes",
+	calculo_positivo."resultado_agregado",
 	(max(dt_coleta) filter (
-	where resultado_agregado = 'NEGATIVO'
+where
+	resultado_agregado = 'NEGATIVO'
 	and dt_coleta > Primeiro_Positivo) over (partition by id_paciente)) - Primeiro_Positivo as Dias_Diferenca
-from
+	from
 	(
 	select
 		ct.*, dt_coleta, id_paciente, min(dt_coleta) filter (
-		where resultado_agregado = 'POSITIVO') over (partition by id_paciente) Primeiro_Positivo
+	where
+		resultado_agregado = 'POSITIVO') over (partition by id_paciente) Primeiro_Positivo
 	from
 		exames_covid_ct as ct
 	inner join (
 		select
 			id_atendimento, id_paciente, dt_coleta
 		from
-			exames_covid) as e on
+			exames) as e on
 		e.id_atendimento = ct.id_atendimento) as calculo_positivo
-where
-	Primeiro_Positivo is not null;
+order by
+	Dias_Diferenca;
