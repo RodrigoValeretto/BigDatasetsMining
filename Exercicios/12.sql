@@ -45,7 +45,7 @@ values('colesterol nao-hdl, soro'),
 inner join desfechos d on
   d.id_atendimento = ct.id_atendimento;
 
--- Reduzir a quantidade de valores que estÃ£o nulos.
+-- Reduzir a quantidade de valores que estao nulos.
 
 -- a partir do hdl e total
 update exames_colesterol_crosstab set "colesterol nao-hdl, soro" = ("colesterol total" - "hdl colesterol")
@@ -84,8 +84,6 @@ and "vldl colesterol" is not null;
 delete from exames_colesterol_crosstab ecc
 where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1
 
-select * from exames_colesterol_crosstab ecc;
-
 -- Uns testes pra ver a contagem de nulos
 select count(*) from exames_colesterol_crosstab ecc
 where "colesterol nao-hdl, soro" is null
@@ -112,9 +110,6 @@ and "vldl colesterol" is not null;
 --Não precisamos mais desse analito
 alter table exames_colesterol_crosstab drop column "colesterol nao-hdl, soro";
 
-select * from exames_colesterol_crosstab ecc
-where id_atendimento ilike '%A';
-
 /*
  * Calcule a dimensao fractal dos exames de colesterol, e deem a sua interpretacao do resultado.
  */
@@ -126,6 +121,10 @@ create function EuclideanDist(real[], real[]) returns float as
 language sql immutable
 returns null on null input;
 
+/*
+* Calcula a dimensao de correlacao.
+*/
+with Grid as (
 select
 	ecc1."colesterol total" as ct1,
 	ecc1."hdl colesterol" as hc1,
@@ -135,25 +134,7 @@ select
 	ecc2."hdl colesterol" as hc2,
 	ecc2."ldl colesterol" as lc2,
 	ecc2."vldl colesterol" as vc2,
-	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"],
-				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
-from
-	exames_colesterol_crosstab ecc1
-cross join exames_colesterol_crosstab ecc2
-	where ecc1.id_atendimento ilike '%A'
-	and ecc2.id_atendimento ilike '%A';
-
-/*with Grid as (
-select
-	ecc1."colesterol total" as ct1,
-	ecc1."hdl colesterol" as hc1,
-	ecc1."ldl colesterol" as lc1,
-	ecc1."vldl colesterol" as vc1,
-	ecc2."colesterol total" as ct2,
-	ecc2."hdl colesterol" as hc2,
-	ecc2."ldl colesterol" as lc2,
-	ecc2."vldl colesterol" as vc2,
-	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"],
+	EuclideanDist(array[ecc1."colesterol total", ecc1."hdl colesterol", ecc1."ldl colesterol", ecc1."vldl colesterol"], 
 				array[ecc2."colesterol total", ecc2."hdl colesterol", ecc2."ldl colesterol", ecc2."vldl colesterol"]) Dist
 from
 	exames_colesterol_crosstab ecc1
@@ -169,7 +150,7 @@ select
 	lc2,
 	vc2,
 	Dist,
-	ROUND(128 * Percent_Rank() over (order by Dist)) Pos --> 7 divisoes
+	ROUND(2048 * Percent_Rank() over (order by Dist)) Pos --> 11 divisoes
 	from Grid ),
 DistExp as (
 select
@@ -191,12 +172,4 @@ select
 	regr_slope(Log(Pos), Log(PDF)) Slope, --> Dimensao Fractal
  regr_intercept(Log(Pos), Log(PDF)) Intercept
 from
-	DistExp ;*/
-
---- 128
--- slope: 1.0005853569094085
--- intercept: -5.276227192610893
-
---- 32
--- slope: 1.0015382080977138
--- intercept: -5.884653364248793
+	DistExp ;
