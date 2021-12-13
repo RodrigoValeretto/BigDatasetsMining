@@ -9,20 +9,14 @@
 */
 ------------------------------------------------------------
 ----------------------- EXERCICIO 08 -----------------------
-drop table if exists exames_covid;
+-- Ajeita alguns dados mal formatados
+update exames set de_resultado = regexp_replace(de_resultado, '[^0-9,]*','','g')
+where de_analito ilike '%covid%'
+and de_resultado ilike 'superior a%';
 
-create table exames_covid as
-select
-    id_exame,
-    id_paciente,
-    id_atendimento,
-    dt_coleta,
-    de_exame,
-    de_analito,
-    NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') as valor_referencia,
+update exames set de_resultado =
     case when de_resultado > NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'POSITIVO'
     when de_resultado < NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'NEGATIVO'
     when NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') = null then null
-    end as de_resultado
-from exames e
+    end
 where de_analito ilike '%covid%' and de_resultado ~ '^[0-9]*[.,]?[0-9]+$';
