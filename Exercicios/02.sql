@@ -11,66 +11,89 @@
 ----------------------- EXERCICIO 02 -----------------------
 
 -- 2.1
--------------------- TABELA Pacientes
--------- ID_PACIENTE
--- Numero de Pacientes
-select count(id_paciente) as n_atendimentos from pacientes p;
 
--------- IC_SEXO
--- Distribuicao dos sexos
+-- Funcao para calcular estatisticas de tabelas, retirada do materia de aula, e modificada levemente para nao calcular desvio padrao e variancia dos ids
+create or replace
+function MinhasEstatisticas(Tab text) returns table(NomeAtrib text, Tipo text, nulls INTEGER, Cardinalidade INTEGER, Variancia DOUBLE precision, DesvioPadrao DOUBLE precision) as $$
+declare
+	Var_r Record;
+
+Var_Cmd text;
+
+Var_Cmd2 text;
+
+begin Var_Cmd = 'SELECT A.AttName::TEXT AN, T.TypName::TEXT ATy
+FROM pg_Class C, pg_attribute A, pg_type T
+WHERE C.RelName NOT LIKE ''pg_%'' AND C.RelName NOT LIKE ''sql_%'' AND
+C.RelKind=''r'' AND
+A.AttRelId=C.OID AND
+A.AttTypId=T.OID AND A.AttNum>0 AND
+C.RelName = ''' || Tab || '''';
+
+for Var_r in execute Var_Cmd loop Var_Cmd2 := 'SELECT Count(*) from ' || Tab || ' WHERE ' || Var_r.AN || ' IS NULL;';
+
+execute Var_Cmd2
+into
+	nulls;
+
+Var_Cmd2 := 'SELECT Count(DISTINCT ' || Var_r.AN || '), ';
+
+if Var_r.ATy in('int2', 'int4', 'int8', 'float4', 'float8', 'numeric')
+and Var_r.AN not ilike '%id%' then Var_Cmd2 := Var_Cmd2 || 'Var_Pop(' || Var_r.AN || '), stddev_pop(' || Var_r.AN || ')';
+else Var_Cmd2 := Var_Cmd2 || 'NULL, NULL';
+end if;
+
+Var_Cmd2 := Var_Cmd2 || ' FROM ' || Tab || ';';
+
+execute Var_Cmd2
+into
+	Cardinalidade,
+	Variancia,
+	DesvioPadrao;
+
+NomeAtrib := Var_r.AN;
+
+Tipo := Var_r.ATy;
+
+return next;
+end loop;
+end;
+$$ language plpgsql;
+
+/*
+ * Estatisticas Gerais das tabelas. 
+*/
+select * from MinhasEstatisticas('pacientes');
+select * from MinhasEstatisticas('exames');
+select * from MinhasEstatisticas('desfechos');
+
+/*
+ * Algumas consultas mais específicas. 
+*/
+-- Distribuicao dos sexos na tabela pacientes
 select ic_sexo, count(ic_sexo) from pacientes p
 group by ic_sexo;
 
--------- AA_NASCIMENTO
--- Numero de Idades Anonimizadas (nulas apos nossa limpeza)
-select count(*) as n_nulos_idade from pacientes p
-where aa_nascimento is null;
--- Variancia da idade
-select var_samp(aa_nascimento) from pacientes p;
--- Desvio Padrao da idade
-select stddev_samp(aa_nascimento) from pacientes p;
-
--------- CD_PAIS
--- Numero de Estrangeiros
+-- Numero de Estrangeiros na tabela pacientes
 select count(*) as n_estrangeiros from pacientes p
 where cd_pais = 'XX';
 
--------- CD_UF
--- Distribuicao dos UF
+-- Distribuicao dos UF na tabela pacientes
 select cd_uf, count(cd_uf) from pacientes p
 where cd_uf is not null
 group by cd_uf;
--- Numero de Anonimizados (nulos apos nossa limpeza)
-select count(*) as n_nulos from pacientes p
-where cd_uf is null;
 
--------- CD_MUNICIPIO
--- Distribuicao dos Municipios
+-- Distribuicao dos Municipios na tabela pacientes
 select cd_municipio, count(cd_municipio) from pacientes p
 where cd_municipio is not null
 group by cd_municipio;
--- Numero de Anonimizados (nulos apos nossa limpeza)
-select count(*) as n_nulos from pacientes p
-where cd_municipio is null;
 
--------- CD_CEPREDUZIDO
--- Distribuicao dos CEPS
+-- Distribuicao dos CEPS na tabela pacientes
 select cd_cepreduzido, count(cd_cepreduzido) from pacientes p
 where cd_cepreduzido is not null
 group by cd_cepreduzido;
--- Numero de Anonimizados (nulos apos nossa limpeza)
-select count(*) as n_nulos from pacientes p
-where cd_cepreduzido is null;
 
--------------------- TABELA Exames
--------- ID_PACIENTE
--- Numero de pacientes que pediram exames
-select count(distinct id_paciente) as n_atendimentos from exames e;
-
--------- ID_ATENDIMENTO
--- Numero de atendimentos
-select count(distinct id_atendimento) as n_atendimentos from exames e;
--- Media de exames por atendimento
+-- Media de exames por atendimento na tabela exames
 select
 	avg(numero_exames)
 from
@@ -80,8 +103,7 @@ from
 	from
 		exames e) as a;
 
--------- DT_COLETA
--- Media de coletas por dia
+-- Media de coletas por dia na tabela exames
 select
 	avg(numero_coletas) as media_coletas_dia
 from
@@ -91,34 +113,12 @@ from
 	from
 		exames e) as a;
 
--------- DE_ORIGEM
--- Numero de origens existentes
-select count(distinct de_origem) as n_origens from exames e;
--- Distribuicao das origens
+-- Distribuicao das origens na tabela exames
 select de_origem, count(de_origem) from exames e
 where de_origem is not null
 group by de_origem;
 
--------- DE_EXAME
--- Numero total de exames realizados
-select count(de_exame) as numero_exames from exames e;
--- Numero de tipos de exames existentes na tabela
-select count(distinct de_exame) as numero_distinto_exames from exames e;
-
--------- DE_ANALITO
--- Numero de tipos de analitoss existentes na tabela
-select count(distinct de_analito) as numero_distinto_analitos from exames e;
-
--------- DE_RESULTADO
--- ?????
--------- CD_UNIDADE
--- ?????
--------- DE_VALOR_REFERENCIA
--- ?????
-
--------------------- TABELA Desfechos
--------- DT_ATENDIMENTO
--- Media de atendimentos por dia
+-- Media de atendimentos por dia na tabela atendimentos
 select
 	avg(numero_atendimentos) as media_atendimentos
 from
@@ -128,23 +128,12 @@ from
 	from
 		desfechos d) as a;
 
--------- DE_TIPO_ATENDIMENTO
--- Tipos distintos de atendimentos
-select distinct de_tipo_atendimento tipos_unicos from desfechos d;
--- Distribuicao dos tipos de atendimento
+-- Distribuicao dos tipos de atendimento na tabela atendimentos
 select de_tipo_atendimento, count(de_tipo_atendimento) from desfechos d
 where de_tipo_atendimento is not null
 group by de_tipo_atendimento;
 
--------- ID_CLINICA
--- Numero de clinicas
-select  count(distinct id_clinica) n_clinicas from desfechos d;
-
--------- DE_CLINICA
--- ?????
-
--------- DT_DESFECHO
--- Media de desfechos por dia
+-- Media de desfechos por dia na tabela atendimentos
 select
 	avg(numero_desfechos) as media_atendimentos
 from
@@ -153,10 +142,6 @@ from
 		count(*) over (partition by dt_desfecho) numero_desfechos
 	from
 		desfechos d) as a;
-
--------- DE_DESFECHO
--- Tipos distintos de desfechos
-select distinct de_desfecho desfechos_unicos from desfechos d;
 
 -- 2.2
 -- Conta pacientes da base
