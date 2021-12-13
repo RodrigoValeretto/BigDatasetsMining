@@ -36,12 +36,15 @@ from
     de_analito,
     de_resultado
 from
-    exames_covid
+    exames
+    where de_analito ilike '%covid%'
+    and de_resultado ~ 'POSITIVO|NEGATIVO'
+    or de_resultado is null
 order by
     1,
     2 $$,
                     $$(
-values('covid 19, anticorpos iga'),
+values('covid 19, anticorpos iga'), 
                     ('covid 19, anticorpos iga, indice'),
                     ('covid 19, anticorpos igg'),
                     ('covid 19, anticorpos igg, indice'),
