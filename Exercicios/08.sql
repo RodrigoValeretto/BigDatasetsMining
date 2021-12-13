@@ -14,6 +14,7 @@ update exames set de_resultado = regexp_replace(de_resultado, '[^0-9,]*','','g')
 where de_analito ilike '%covid%'
 and de_resultado ilike 'superior a%';
 
+-- Faz o update nos dados da tabela, levando em conta o valor de referencia de cada tupla
 update exames set de_resultado =
     case when de_resultado > NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'POSITIVO'
     when de_resultado < NULLIF(regexp_replace(de_valor_referencia, '[^0-9,]*','','g'), '') then 'NEGATIVO'
