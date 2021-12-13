@@ -29,7 +29,6 @@ where
 where row_number = 1;
 
 -- 5.B
--- Nao existem diferentes nomes para um mesmo analito
-select distinct de_analito from exames e
-where e.de_exame ilike '%hemograma%'
-order by de_analito;
+-- Dois nomes completos foram substituidos pela sigla
+update exames set de_analito = 'hcm' where de_analito ilike 'hemoglobina corpuscular media';
+update exames set de_analito = 'chcm' where de_analito ilike 'concentracao de hemoglobina corpuscular';
