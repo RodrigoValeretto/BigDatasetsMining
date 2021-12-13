@@ -9,7 +9,7 @@
 */
 ------------------------------------------------------------
 ----------------------- EXERCICIO 06 -----------------------
--- Assumimos que v-colesterol Ã© a medida de vldl-colesterol
+-- Assumimos que v-colesterol eh a medida de vldl-colesterol
 update exames set de_analito = 'vldl-colesterol'
 where de_analito = 'v-colesterol';
 
