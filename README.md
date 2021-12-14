@@ -12,4 +12,4 @@ Leonardo Cerce Guioto | 10716640
 Rodrigo Augusto Valeretto | 10684792
 
 ## Instruções de execução
-Para que o código seja executado de maneira correta é necessário extrair o contéudo do zip 'HSL_Junho2021.zip' na pasta raíz do projeto, do contrário os CSV's necessários para montar a base não serão encontrados e um erro será gerado.
+Para que o código seja executado de maneira correta é necessário fazer o download da base em https://repositoriodatasharingfapesp.uspdigital.usp.br/handle/item/97 e extrair o contéudo do zip 'HSL_Junho2021.zip' na pasta raíz do projeto, do contrário os CSV's necessários para montar a base não serão encontrados e um erro será gerado.
