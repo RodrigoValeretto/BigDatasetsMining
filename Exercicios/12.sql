@@ -10,9 +10,6 @@
 ------------------------------------------------------------
 ----------------------- EXERCICIO 12 -----------------------
 
--- Extrair as medidas de cada analito como um atributo de tipo numerico
---(evitando erros de conversao quando o atributo original contiver apenas texto)
-
 -- Criando uma tabela a partir da consulta do Exercicio 06
 drop table if exists exames_colesterol_crosstab;
 
@@ -84,30 +81,7 @@ and "vldl colesterol" is not null;
 delete from exames_colesterol_crosstab ecc
 where abs("colesterol nao-hdl, soro" - ("colesterol total" - "hdl colesterol")) > 1;
 
--- Uns testes pra ver a contagem de nulos
-select count(*) from exames_colesterol_crosstab ecc
-where "colesterol nao-hdl, soro" is null
-or "colesterol total" is null
-or "hdl colesterol" is null
-or "ldl colesterol" is null
-or "vldl colesterol" is null;
--- 2643 tuplas contem nulos antes
--- 87 tuplas contem nulos depois
-
-select count(*) from exames_colesterol_crosstab ecc
-where "colesterol nao-hdl, soro" is not null
-and "colesterol total" is not null
-and "hdl colesterol" is not null
-and "ldl colesterol" is not null
-and "vldl colesterol" is not null;
--- 2265 tuplas não contem nulos antes
--- 4807 tuplas não contem nulos depois
-
-/* Considerando a maneira como essa tabela foi gerada, incluindo quatro analitos, e sabendo como eles
- * estao correlacionados, qual e a maior dimensao fractal possivel para esses atributos?
- */
-
---Não precisamos mais desse analito
+--Não precisamos desse analito
 alter table exames_colesterol_crosstab drop column "colesterol nao-hdl, soro";
 
 /*
