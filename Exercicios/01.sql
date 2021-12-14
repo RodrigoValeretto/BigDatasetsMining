@@ -72,7 +72,7 @@ alter table pacientes alter column aa_nascimento type integer using aa_nasciment
 -- Trocando o valor do UF para nulo nos dados anonimizados
 update pacientes set cd_uf = null where cd_uf = 'UU';
 
--- Trocando o valor do MunicÃ­pio para nulo nos dados anonimizados ou de estrangeiros
+-- Trocando o valor do Municipio para nulo nos dados anonimizados ou de estrangeiros
 update pacientes set cd_municipio = null where cd_municipio = 'MMMM';
 
 -- Trocando o valor do CEP para nulo nos dados anonimizados ou de estrangeiros

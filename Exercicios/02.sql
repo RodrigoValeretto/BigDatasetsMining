@@ -68,7 +68,7 @@ select * from MinhasEstatisticas('exames');
 select * from MinhasEstatisticas('desfechos');
 
 /*
- * Algumas consultas mais específicas. 
+ * Algumas consultas mais especificas.
 */
 -- Distribuicao dos sexos na tabela pacientes
 select ic_sexo, count(ic_sexo) from pacientes p
