@@ -10,14 +10,6 @@
 ------------------------------------------------------------
 ----------------------- EXERCICIO 11 -----------------------
 
------------ CONSULTAS DE TESTE  ---------
-select distinct de_origem from exames;
-select distinct de_origem from exames
-where de_origem ilike '%UTI%';
-select distinct de_exame from exames
-where de_exame ilike '%cov%';
------------------------------------------
-
 -- Cria vista de auxilio
 drop view if exists exames_contabilizados;
 create view exames_contabilizados as
